@@ -9,7 +9,7 @@
         <module name="chatbot-tb" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel target="1.4">
+    <bytecodeTargetLevel target="8">
       <module name="chatbot-tb" target="1.5" />
     </bytecodeTargetLevel>
   </component>
