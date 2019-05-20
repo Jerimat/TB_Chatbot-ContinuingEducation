@@ -7,6 +7,8 @@ import com.ibm.watson.assistant.v2.Assistant;
 import com.ibm.watson.assistant.v2.model.*;
 import hesge.legrand.tb.chatbot.Credentials;
 
+import java.util.List;
+
 /**
  * Singleton pattern so that only 1 instance of chatbot/service is allowed
  *
@@ -48,6 +50,7 @@ class WatsonAssistantModule {
     }
 
     protected void answerUtterance(String utterance) {
+
         MessageInput input = new MessageInput.Builder()
                 .messageType("text")
                 .text(utterance)
@@ -62,15 +65,25 @@ class WatsonAssistantModule {
         assistant.message(messageOptions).enqueue(new ServiceCallback<MessageResponse>() {
             public void onResponse(Response<MessageResponse> response) {
                 MessageResponse messageResponse = response.getResult();
+                List<RuntimeEntity> entities = messageResponse.getOutput().getEntities();
+
                 System.out.println("--- Response from Watson Assistant ---");
-                System.out.println(messageResponse);
+                System.out.println("[{");
+                for (RuntimeEntity runtimeEntity : entities) {
+                    System.out.println("entity : " + runtimeEntity.getEntity());
+                    System.out.println("value : " + runtimeEntity.getValue());
+                    System.out.println("confidence : " + runtimeEntity.getConfidence());
+                    System.out.println("---------------");
+                }
+                System.out.println("}]");
                 System.out.println("--- End of Watson Assistant's Response ---");
             }
 
             public void onFailure(Exception e) {
                 // TODO
             }
-        });
-    }
+        }); //API request
+
+    } //answerUtterance
 
 }
