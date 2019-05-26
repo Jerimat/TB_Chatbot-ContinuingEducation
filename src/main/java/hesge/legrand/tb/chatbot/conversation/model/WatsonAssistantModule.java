@@ -1,10 +1,9 @@
-package hesge.legrand.tb.chatbot.model;
+package hesge.legrand.tb.chatbot.conversation.model;
 
-import com.ibm.cloud.sdk.core.http.Response;
-import com.ibm.cloud.sdk.core.http.ServiceCallback;
 import com.ibm.cloud.sdk.core.service.security.IamOptions;
 import com.ibm.watson.assistant.v2.Assistant;
 import com.ibm.watson.assistant.v2.model.*;
+import hesge.legrand.tb.chatbot.Constants;
 import hesge.legrand.tb.chatbot.Credentials;
 
 import java.util.List;
@@ -16,12 +15,12 @@ import java.util.List;
  * sending input to Natural Language Understanding Module and returning the correct chatbot answer
  *
  */
-class WatsonAssistantModule {
+public class WatsonAssistantModule {
     private static WatsonAssistantModule instance;
     private Assistant assistant;
     private String sessionId;
 
-    protected static WatsonAssistantModule getInstance() {
+    public static WatsonAssistantModule getInstance() {
         if (instance == null) {
             instance = new WatsonAssistantModule();
         }
@@ -49,8 +48,12 @@ class WatsonAssistantModule {
         assistant.setEndPoint(Credentials.ASSISTANT_API_URL);
     }
 
-    protected void answerUtterance(String utterance) {
-
+    /**
+     * Utterance is computed by the implemented chatbot, detecting corresponding intent
+     * and printing the chatbot's response in the terminal console
+     * @param utterance : text input from the user
+     */
+    public void answerUtterance(String utterance) {
         MessageInput input = new MessageInput.Builder()
                 .messageType("text")
                 .text(utterance)
@@ -62,28 +65,35 @@ class WatsonAssistantModule {
                 .input(input)
                 .build();
 
-        assistant.message(messageOptions).enqueue(new ServiceCallback<MessageResponse>() {
-            public void onResponse(Response<MessageResponse> response) {
-                MessageResponse messageResponse = response.getResult();
-                List<RuntimeEntity> entities = messageResponse.getOutput().getEntities();
+        MessageResponse response = assistant
+                .message(messageOptions)
+                .execute()
+                .getResult();
 
-                System.out.println("--- Response from Watson Assistant ---");
-                System.out.println("[{");
-                for (RuntimeEntity runtimeEntity : entities) {
-                    System.out.println("entity : " + runtimeEntity.getEntity());
-                    System.out.println("value : " + runtimeEntity.getValue());
-                    System.out.println("confidence : " + runtimeEntity.getConfidence());
-                    System.out.println("---------------");
-                }
-                System.out.println("}]");
-                System.out.println("--- End of Watson Assistant's Response ---");
+        System.out.println("--- Response from Watson Assistant ---");
+        /*  Detection of intents  */
+        List<RuntimeIntent> responseIntents = response.getOutput().getIntents();
+        if (responseIntents.size() > 0) {
+            System.console().printf("Detected intent : #" + responseIntents.get(0).getIntent());
+        }
+
+        /*  response from chatbot */
+        List<DialogRuntimeResponseGeneric> chatbotResponse = response.getOutput().getGeneric();
+        if (chatbotResponse.size() > 0) {
+            for (DialogRuntimeResponseGeneric answer : chatbotResponse) {
+                System.console().printf(Constants.CHATBOT_TALK + answer.getText());
             }
-
-            public void onFailure(Exception e) {
-                // TODO
-            }
-        }); //API request
-
+        }
+        System.out.println("--- End of Watson Assistant's Response ---");
     } //answerUtterance
 
+    /**
+     * This method closes the current session, thus ending the interaction with the chatbot
+     */
+    public void endInteraction() {
+        DeleteSessionOptions deleteSessionOptions = new DeleteSessionOptions.Builder(
+                Credentials.ASSISTANT_ID, sessionId)
+                .build();
+        assistant.deleteSession(deleteSessionOptions).execute();
+    } //endInteraction
 }
