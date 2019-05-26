@@ -1,4 +1,4 @@
-package hesge.legrand.tb.chatbot;
+package hesge.legrand.tb.chatbot.helper;
 
 public final class Credentials {
 

@@ -4,6 +4,7 @@ import com.ibm.watson.natural_language_understanding.v1.model.CategoriesResult;
 import com.ibm.watson.natural_language_understanding.v1.model.ConceptsResult;
 
 import java.util.List;
+import java.util.Objects;
 
 public class Question {
 
@@ -73,5 +74,23 @@ public class Question {
                 ", lstCategories=" + lstCategories +
                 ", lstConcepts=" + lstConcepts +
                 '}';
+    }
+
+    /**
+     * The equals method has been set on the Theme && questioning values
+     * so that a Question can concern different theme
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Question question = (Question) o;
+        return theme == question.theme &&
+                Objects.equals(questioning, question.questioning);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(theme, questioning);
     }
 }

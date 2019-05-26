@@ -4,8 +4,8 @@ import com.ibm.cloud.sdk.core.service.model.GenericModel;
 import com.ibm.cloud.sdk.core.service.security.IamOptions;
 import com.ibm.watson.natural_language_understanding.v1.NaturalLanguageUnderstanding;
 import com.ibm.watson.natural_language_understanding.v1.model.*;
-import hesge.legrand.tb.chatbot.Constants;
-import hesge.legrand.tb.chatbot.Credentials;
+import hesge.legrand.tb.chatbot.helper.Constants;
+import hesge.legrand.tb.chatbot.helper.Credentials;
 
 import java.util.HashMap;
 import java.util.List;
