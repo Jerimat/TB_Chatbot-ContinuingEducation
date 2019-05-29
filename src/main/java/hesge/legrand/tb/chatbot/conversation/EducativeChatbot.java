@@ -9,6 +9,7 @@ import hesge.legrand.tb.education.model.Theme;
 import java.io.Console;
 import java.util.List;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.logging.LogManager;
 
 import static hesge.legrand.tb.chatbot.helper.Constants.*;
@@ -18,7 +19,8 @@ public class EducativeChatbot {
     private static EducativeChatbot instance;
     private WatsonAssistantModule assistant;
     private List<Question> lstQuestions;
-    private Console console;
+    private Scanner scanner;
+//    private Console console;
 
     public static EducativeChatbot getInstance() {
         if (instance == null) {
@@ -29,12 +31,12 @@ public class EducativeChatbot {
 
     private EducativeChatbot() {
         this.assistant = WatsonAssistantModule.getInstance();
-        console = System.console();
-        if (console != null) {
+//        console = System.console();
+        this.scanner = new Scanner(System.in);
+        if (scanner != null) {
             interactWithAssistant();
-        } else {
-            System.out.println("Pas de console détectée");
         }
+        else { System.out.println("Pas de scanner détecté"); }
     }
 
     private void interactWithAssistant() {
@@ -47,13 +49,14 @@ public class EducativeChatbot {
             if (currentAction != null) {
                 computeAction(currentAction);
                 if (currentAction.getName().equalsIgnoreCase(ACTION_FILTER_QUESTIONS)) {
-                    startQuestionning();
+                    startQuestioning();
                 }
             }
             /*  next round of input   */
             System.out.print(USER_TALK);
-            inputText = console.readLine();
-        } while (!currentAction.equals(ACTION_END_CONVERSATION)); //NullPointerException here
+            inputText = scanner.nextLine();
+//            inputText = console.readLine();
+        } while (currentAction == null || !currentAction.getName().equals(ACTION_END_CONVERSATION)); //TODO: pouvoir quitter la conversation
 
         /*  Delete session when done */
         assistant.endInteraction();
@@ -64,8 +67,9 @@ public class EducativeChatbot {
         switch (requestedAction) {
             case ACTION_FILTER_QUESTIONS :
                 String requestedTheme = currentAction.getParameters().get(ACTION_FILTER_QUESTIONS_PARAMETER).toString();
-                console.printf("filtering questions by " + requestedTheme);
-                Theme theme = Theme.valueOf(requestedTheme);
+                System.out.println("filtering questions by " + requestedTheme);
+//                console.printf("filtering questions by " + requestedTheme);
+                Theme theme = Theme.valueOf(requestedTheme.toUpperCase());
                 filterQuestions(theme);
                 break;
             case ACTION_END_CONVERSATION :
@@ -77,14 +81,15 @@ public class EducativeChatbot {
         lstQuestions = Initializer.getInstance().filterQuestions(theme);
     } //filterQuestions
 
-    private void startQuestionning() {
+    private void startQuestioning() {
         boolean isStop = false;
         Question currentQuestion;
         String userAnswer;
         Random random = new Random();
 
-        while (!lstQuestions.isEmpty() | !isStop) {
+        while (!lstQuestions.isEmpty() || !isStop) {
             int remainingQuestions = lstQuestions.size();
+            System.out.println("Nombre de questions restantes : " + remainingQuestions);
             if (remainingQuestions > 0) {
                 if (remainingQuestions > 2) {
                     currentQuestion = lstQuestions.get(random.nextInt(remainingQuestions - 1));
@@ -92,15 +97,20 @@ public class EducativeChatbot {
                     currentQuestion = lstQuestions.get(0);
                 }
                 /*  EducativeChatbot asks a question */
-                console.printf(currentQuestion.getQuestioning());
+                System.out.println(CHATBOT_TALK + currentQuestion.getQuestioning());
+//                console.printf(currentQuestion.getQuestioning());
 
                 /*  User is asked to answer */
-                userAnswer = console.readLine();
+                System.out.print(USER_TALK);
+                userAnswer = scanner.nextLine();
+//                userAnswer = console.readLine();
                 isStop = assistant.isStop(userAnswer);
                 //TODO: send userAnswer to be analyzed by NLU
+                lstQuestions.remove(currentQuestion);
             }
-            console.printf("Je n'ai plus de question à te poser sur ce thème");
+            System.out.println(CHATBOT_TALK + "Je n'ai plus de question à te poser sur ce theme");
+//            console.printf("Je n'ai plus de question à te poser sur ce theme");
         }
-    } //startQuestionning
+    } //startQuestioning
 
 }

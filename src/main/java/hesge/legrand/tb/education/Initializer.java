@@ -77,6 +77,16 @@ public class Initializer {
         jsonFileWriter.close();
     } //serializeQuestions
 
+    @Experimental
+    public void deserialize(String inputFilePath) throws FileNotFoundException {
+        FileReader jsonReader = new FileReader(inputFilePath);
+        Type listType = new TypeToken<ArrayList<Question>>() {}.getType();
+        Gson gson = new Gson();
+        List<Question> lstInputQuestions = gson.fromJson(jsonReader, listType);
+
+        lstQuestions = lstInputQuestions;
+    } //deserialize
+
     /**
      * Returns a List of questions about the specified theme
      * @param theme : Theme we want the questions to be about
@@ -90,7 +100,6 @@ public class Initializer {
                 lstFilteredQuestions.add(question);
             }
         }
-
         return lstFilteredQuestions;
     } //filterQuestions
 
@@ -99,7 +108,7 @@ public class Initializer {
      * @return List of Questions found in input file
      * @throws IOException
      */
-    private <T extends GenericModel> List<Question> initializeQuestions() throws IOException {
+    private <T extends GenericModel> void initializeQuestions() throws IOException {
         List<Question> lstInputQuestions = new ArrayList<>();
 
         String row;
@@ -128,15 +137,15 @@ public class Initializer {
                 } else {
                     lstInputQuestions.add(new Question(theme, question, answer, categories, concepts));
                 }
-                System.out.println("question added");
             } catch (IllegalArgumentException e) {
                 System.out.println("you have entered a wrong Theme identifier : " + data[0] + " is not a theme handled by the EducativeChatbot (case-sensitive)");
                 e.printStackTrace();
             }
         }
         csvReader.close();
+        System.out.println("Questions added");
 
-        return lstInputQuestions;
+        lstQuestions = lstInputQuestions;
     } //initializeQuestions
 
 }

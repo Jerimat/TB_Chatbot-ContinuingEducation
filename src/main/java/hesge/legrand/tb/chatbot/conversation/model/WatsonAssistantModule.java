@@ -81,14 +81,16 @@ public class WatsonAssistantModule {
         /*  Detection of intents  */
         List<RuntimeIntent> responseIntents = response.getOutput().getIntents();
         if (responseIntents.size() > 0) {
-            System.console().printf("Detected intent : #" + responseIntents.get(0).getIntent());
+            System.out.println("Detected intent : #" + responseIntents.get(0).getIntent());
+//            System.console().printf("Detected intent : #" + responseIntents.get(0).getIntent());
         }
 
         /*  Text response from chatbot */
         List<DialogRuntimeResponseGeneric> chatbotResponse = response.getOutput().getGeneric();
         if (chatbotResponse.size() > 0) {
             for (DialogRuntimeResponseGeneric answer : chatbotResponse) {
-                System.console().printf(Constants.CHATBOT_TALK + answer.getText());
+                System.out.println(Constants.CHATBOT_TALK + answer.getText());
+//                System.console().printf(Constants.CHATBOT_TALK + answer.getText());
             }
         }
 
