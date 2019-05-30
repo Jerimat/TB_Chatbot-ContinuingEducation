@@ -51,24 +51,12 @@ public class NaturalLanguageUnderstandingModule {
                 .limit(5)
                 .build();
 
-        KeywordsOptions keywords = new KeywordsOptions.Builder()
-                .limit(3)
-                .build();
-
-        RelationsOptions relations = new RelationsOptions.Builder()
-                .build();
-
         features = new Features.Builder()
                 .categories(categories)
                 .concepts(concepts)
                 .entities(entities)
-                .keywords(keywords)
                 .build();
     } //setFeatures
-
-    public void setFeatures(GenericModel... args) {
-        // TODO()
-    }
 
     public void analyzeUtterance(String utterance) {
         AnalyzeOptions parameters = new AnalyzeOptions.Builder()
@@ -87,7 +75,7 @@ public class NaturalLanguageUnderstandingModule {
      * This method analyze a typical correct answer  to a question
      * to detect which categories and concepts should stand out from the analysis of the user's answer to the given question
      *
-     * @param typicalAnswer : the kind of answer the user should answer the corresponding question with
+     * @param performance : the kind of answer the user should answer the corresponding question with
      * @param <T> : Since this method returns 2 different types of Analysis we must specify that
      *           both CategoriesResult and ConcceptResult inherit from GenericModel
      *
@@ -95,11 +83,11 @@ public class NaturalLanguageUnderstandingModule {
      * 1 List<CategoriesResult> containing the categories concerned by the typical correct answer
      * 1 List<ConceptResult> containing the concepts concerned by the typical correct answer
      */
-    public <T extends GenericModel> Map<String, List<T>> setRecognizable(String typicalAnswer) {
+    public <T extends GenericModel> Map<String, List<T>> setGradable(String performance) {
         Map<String, List<T>> questionAnalysis = new HashMap<>();
 
         AnalyzeOptions parameters = new AnalyzeOptions.Builder()
-                .text(typicalAnswer)
+                .text(performance)
                 .features(features)
                 .build();
 
@@ -108,7 +96,7 @@ public class NaturalLanguageUnderstandingModule {
                 .execute()
                 .getResult();
 
-        /*  Get the categories & concepts result of the typicalAnswer analysis */
+        /*  Get the categories & concepts result of the performance analysis */
         List<CategoriesResult> categories = results.getCategories();
         List<ConceptsResult> concepts = results.getConcepts();
 
@@ -116,6 +104,6 @@ public class NaturalLanguageUnderstandingModule {
         questionAnalysis.put(Constants.CONCEPTS_ID, (List<T>) concepts);
 
         return questionAnalysis;
-    } //setRecognizable
+    } //setGradable
 
 }

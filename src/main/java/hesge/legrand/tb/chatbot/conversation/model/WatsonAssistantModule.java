@@ -1,14 +1,21 @@
 package hesge.legrand.tb.chatbot.conversation.model;
 
+import com.ibm.cloud.sdk.core.service.exception.ServiceResponseException;
+import com.ibm.cloud.sdk.core.service.model.GenericModel;
 import com.ibm.cloud.sdk.core.service.security.IamOptions;
 import com.ibm.watson.assistant.v2.Assistant;
 import com.ibm.watson.assistant.v2.model.*;
+import com.ibm.watson.natural_language_understanding.v1.model.CategoriesResult;
+import com.ibm.watson.natural_language_understanding.v1.model.ConceptsResult;
 import hesge.legrand.tb.chatbot.helper.Constants;
 import hesge.legrand.tb.chatbot.helper.Credentials;
+import hesge.legrand.tb.education.model.Question;
+import io.reactivex.annotations.Experimental;
 
 import java.util.List;
+import java.util.Map;
 
-import static hesge.legrand.tb.chatbot.helper.Constants.ACTION_END_QUESTIONS;
+import static hesge.legrand.tb.chatbot.helper.Constants.*;
 
 /**
  * Singleton pattern so that only 1 instance of chatbot/service is allowed
@@ -53,21 +60,38 @@ public class WatsonAssistantModule {
         assistant.setEndPoint(Credentials.ASSISTANT_API_URL);
     } //setCredentials
 
-    public boolean isStop(String answer) {
-        boolean isStop = false;
+    public int interactionState(String answer) {
+        int state = CODE_QUESTIONS_PROCEED;
 
         MessageResponse response = responseBuilder(answer);
         List<DialogNodeAction> responseActions = response.getOutput().getActions();
         if (responseActions != null) {
             if (responseActions.get(0).getActionType().equalsIgnoreCase("client")) {
-                if (responseActions.get(0).getName().equalsIgnoreCase(ACTION_END_QUESTIONS)) {
-                    isStop = true;
+                String action = responseActions.get(0).getName();
+                if (action.equalsIgnoreCase(ACTION_END_QUESTIONS)) {
+                    state = CODE_QUESTIONS_END;
+                    answer(response.getOutput().getGeneric());
+                } else if (action.equalsIgnoreCase(ACTION_HELP_QUESTION)) {
+                    answer(response.getOutput().getGeneric());
+                    state = CODE_QUESTIONS_HELP;
                 }
             }
         }
 
-        return isStop;
-    } //isStop
+        return state;
+    } //interactionState
+
+    /**
+     * This method makes chatbot answer
+     * @param chatbotAnswer
+     */
+    private void answer(List<DialogRuntimeResponseGeneric> chatbotAnswer){
+        if (chatbotAnswer.size() > 0) {
+            for (DialogRuntimeResponseGeneric answer : chatbotAnswer) {
+                System.out.println(Constants.CHATBOT_TALK + answer.getText());
+            }
+        }
+    } //answer
 
     /**
      * Utterance is computed by the implemented chatbot, detecting corresponding intent
@@ -77,22 +101,9 @@ public class WatsonAssistantModule {
     public DialogNodeAction answerUtterance(String utterance) {
         MessageResponse response = responseBuilder(utterance);
 
-        System.out.println("--- Response from Watson Assistant ---");
-        /*  Detection of intents  */
-        List<RuntimeIntent> responseIntents = response.getOutput().getIntents();
-        if (responseIntents.size() > 0) {
-            System.out.println("Detected intent : #" + responseIntents.get(0).getIntent());
-//            System.console().printf("Detected intent : #" + responseIntents.get(0).getIntent());
-        }
-
         /*  Text response from chatbot */
         List<DialogRuntimeResponseGeneric> chatbotResponse = response.getOutput().getGeneric();
-        if (chatbotResponse.size() > 0) {
-            for (DialogRuntimeResponseGeneric answer : chatbotResponse) {
-                System.out.println(Constants.CHATBOT_TALK + answer.getText());
-//                System.console().printf(Constants.CHATBOT_TALK + answer.getText());
-            }
-        }
+        answer(chatbotResponse);
 
         /*  Check if any action is requested by the chatbot */
         DialogNodeAction currentAction = null;
@@ -103,9 +114,82 @@ public class WatsonAssistantModule {
             }
         }
 
-        System.out.println("--- End of Watson Assistant's Response ---");
         return currentAction;
     } //answerUtterance
+
+    /**
+     * This method make comparison between results of user's userPerformance and those of typical correct userPerformance
+     * After analysis, responds with either good, partial, or bad feedback
+     * @param userPerformance : The userPerformance the user wrote
+     * @param question : the question the user answered to
+     */
+    public <T extends GenericModel> void assertAnswer(String userPerformance, Question question) {
+        /*  Get correction from question  */
+        List<CategoriesResult> correctCategories = question.getLstCategories();
+        List<ConceptsResult> correctConcepts = question.getLstConcepts();
+
+        if (correctCategories.isEmpty()) {
+            sendFeedback(UNGRADABLE_ANSWER_LIMIT);
+        } else {
+            try {
+
+                /*  Get analysis from user performance  */
+                Map<String, List<T>> answerAnalysis = nlu.setGradable(userPerformance);
+                List<CategoriesResult> userCategories = (List<CategoriesResult>) answerAnalysis.get(CATEGORIES_ID);
+                List<ConceptsResult> userConcepts = (List<ConceptsResult>) answerAnalysis.get(CONCEPTS_ID);
+
+                /* equals method of Features is effective on both label AND relevance analyzed by NLU
+                 * Then, if two categories have the same label but not the same relevance, they are not considered equals  */
+                /*  categories correspondence percentage  */
+                float inField = 0;
+                for (CategoriesResult category : correctCategories) {
+                    String categoryLabel = category.getLabel();
+                    for (CategoriesResult userCategory : userCategories) {
+                        String userCategoryLabel = userCategory.getLabel();
+                        if (userCategoryLabel.equalsIgnoreCase(categoryLabel)) {
+                            inField += 1;
+                        }
+                    }
+                }
+                inField /= correctCategories.size();
+
+                /*  concepts correspondence percentage  */
+                float precision = 0;
+                for (ConceptsResult concept : correctConcepts) {
+                    String conceptLabel = concept.getText();
+                    for (ConceptsResult userConcept : userConcepts) {
+                        String userConceptLabel = userConcept.getText();
+                        if (userConceptLabel.equalsIgnoreCase(conceptLabel)) {
+                            precision += 1;
+                        }
+                    }
+                }
+                precision /= correctConcepts.size();
+
+                /*  We make categories correspondance more important than concept correspondance  */
+                float correctness = ((2 * inField) + precision) / 3;
+                System.console().printf("pourcentage de justesse : %.2f %n \n", correctness);
+                sendFeedback(correctness);
+            } catch (ServiceResponseException e) {
+                System.console().printf(CHATBOT_TALK + FEEDBACK_ANSWER_NOT_VALID + "\n");
+            }
+        }
+    } //assertAnswer
+
+    /**
+     * Determines which feedback to give to a given answer based on percentage of correctness
+     * @param correctness : correctness of the user's performance
+     */
+    private void sendFeedback(double correctness) {
+        String feedback = CHATBOT_TALK;
+        if (correctness != UNGRADABLE_ANSWER_LIMIT) {
+            if (correctness > PERFECT_ANSWER_LIMIT) { feedback += FEEDBACK_PERFECT_ANSWER; }
+            else if (correctness >= GOOD_ANSWER_LIMIT) { feedback += FEEDBACK_GOOD_ANSWER; }
+            else if (correctness > ACCEPTABLE_ANSWER_LIMIT) { feedback += FEEDBACK_ACCEPTABLE_ANSWER; }
+            else { feedback += FEEDBACK_BAD_ANSWER; }
+        } else { feedback += FEEDBACK_UNGRADABLE; }
+        System.console().printf(feedback + "\n");
+    } //sendFeedback
 
     private MessageResponse responseBuilder(String utterance) {
         MessageInput input = new MessageInput.Builder()

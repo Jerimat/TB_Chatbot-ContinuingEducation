@@ -8,12 +8,10 @@ public final class Credentials {
     public final static String NLU_VERSION = "2019-05-01";
 
     /* Watson Assistant Informations */
+    public final static String ASSISTANT_ID = "81237f13-6984-4f8a-956b-c537b0b3c2d6";
     public final static String ASSISTANT_APIKEY = "uGt_uns_Sds1olKf_kG4CRh6ILkJKlrZYUlHR9SwVPmE";
     public final static String ASSISTANT_API_URL = "https://gateway-lon.watsonplatform.net/assistant/api";
     public final static String ASSISTANT_VERSION = "2019-03-31";
-    public final static String ASSISTANT_ID = "3598c5b5-3eb3-4b24-bb05-d12c1f4bfe21";
-    public final static String ASSISTANT_URL = "https://gateway-lon.watsonplatform.net/assistant/api/v2/assistants/3598c5b5-3eb3-4b24-bb05-d12c1f4bfe21/sessions";
-
-    private final static String WORKSPACE_ID = "fa9cf566-bb7b-46c1-96d4-1c8949c0f69f";
+    private final static String WORKSPACE_ID = "c4c3d019-0988-4ee1-8cc0-c2d65a686574";
 
 }

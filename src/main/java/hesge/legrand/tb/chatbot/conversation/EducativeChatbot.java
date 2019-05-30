@@ -19,8 +19,7 @@ public class EducativeChatbot {
     private static EducativeChatbot instance;
     private WatsonAssistantModule assistant;
     private List<Question> lstQuestions;
-    private Scanner scanner;
-//    private Console console;
+    private Console console;
 
     public static EducativeChatbot getInstance() {
         if (instance == null) {
@@ -31,17 +30,17 @@ public class EducativeChatbot {
 
     private EducativeChatbot() {
         this.assistant = WatsonAssistantModule.getInstance();
-//        console = System.console();
-        this.scanner = new Scanner(System.in);
-        if (scanner != null) {
+        console = System.console();
+        if (console != null) {
             interactWithAssistant();
         }
-        else { System.out.println("Pas de scanner détecté"); }
+        else { System.out.println("Pas de console détectée \n"); }
     }
 
     private void interactWithAssistant() {
         LogManager.getLogManager().reset();
 
+        boolean proceed;
         String inputText = "";
         DialogNodeAction currentAction;
         do {
@@ -52,27 +51,36 @@ public class EducativeChatbot {
                     startQuestioning();
                 }
             }
+            proceed = proceed(currentAction);
             /*  next round of input   */
-            System.out.print(USER_TALK);
-            inputText = scanner.nextLine();
-//            inputText = console.readLine();
-        } while (currentAction == null || !currentAction.getName().equals(ACTION_END_CONVERSATION)); //TODO: pouvoir quitter la conversation
+            if (proceed) {
+                console.printf(USER_TALK);
+                inputText = console.readLine();
+            }
+        } while (proceed);
 
         /*  Delete session when done */
         assistant.endInteraction();
     } //interactWithAssistant
 
+    private boolean proceed(DialogNodeAction currentAction) {
+        if (currentAction == null || !currentAction.getName().equals(ACTION_END_CONVERSATION)) {
+            return true;
+        } else {
+            return false;
+        }
+    } //proceed
+
     private void computeAction(DialogNodeAction currentAction) {
         String requestedAction = currentAction.getName();
         switch (requestedAction) {
-            case ACTION_FILTER_QUESTIONS :
+            case ACTION_FILTER_QUESTIONS:
                 String requestedTheme = currentAction.getParameters().get(ACTION_FILTER_QUESTIONS_PARAMETER).toString();
-                System.out.println("filtering questions by " + requestedTheme);
-//                console.printf("filtering questions by " + requestedTheme);
+                console.printf("filtering questions by " + requestedTheme + "\n");
                 Theme theme = Theme.valueOf(requestedTheme.toUpperCase());
                 filterQuestions(theme);
                 break;
-            case ACTION_END_CONVERSATION :
+            case ACTION_END_CONVERSATION:
                 break;
         }
     } //computeAction
@@ -82,35 +90,45 @@ public class EducativeChatbot {
     } //filterQuestions
 
     private void startQuestioning() {
-        boolean isStop = false;
+        int interactionState = CODE_QUESTIONS_PROCEED;
         Question currentQuestion;
         String userAnswer;
         Random random = new Random();
 
-        while (!lstQuestions.isEmpty() || !isStop) {
+        while (!lstQuestions.isEmpty() && interactionState == CODE_QUESTIONS_PROCEED) {
             int remainingQuestions = lstQuestions.size();
-            System.out.println("Nombre de questions restantes : " + remainingQuestions);
+            console.printf("Nombre de questions restantes : " + remainingQuestions + "\n");
             if (remainingQuestions > 0) {
-                if (remainingQuestions > 2) {
+                if (remainingQuestions >= 2) {
                     currentQuestion = lstQuestions.get(random.nextInt(remainingQuestions - 1));
                 } else {
                     currentQuestion = lstQuestions.get(0);
                 }
-                /*  EducativeChatbot asks a question */
-                System.out.println(CHATBOT_TALK + currentQuestion.getQuestioning());
-//                console.printf(currentQuestion.getQuestioning());
+                /*  Prompt user to answer given question    */
+                userAnswer = promptUserAnswer(currentQuestion);
 
-                /*  User is asked to answer */
-                System.out.print(USER_TALK);
-                userAnswer = scanner.nextLine();
-//                userAnswer = console.readLine();
-                isStop = assistant.isStop(userAnswer);
-                //TODO: send userAnswer to be analyzed by NLU
+                interactionState = assistant.interactionState(userAnswer);
+                if (interactionState == CODE_QUESTIONS_PROCEED) {
+                    assistant.assertAnswer(userAnswer, currentQuestion);
+                } else if (interactionState == CODE_QUESTIONS_HELP) {
+                    promptUserAnswer(currentQuestion);
+                }
                 lstQuestions.remove(currentQuestion);
             }
-            System.out.println(CHATBOT_TALK + "Je n'ai plus de question à te poser sur ce theme");
-//            console.printf("Je n'ai plus de question à te poser sur ce theme");
+        }
+        if (lstQuestions.isEmpty()) {
+            console.printf(CHATBOT_TALK + "Je n'ai plus de question à te poser sur ce theme \n");
         }
     } //startQuestioning
+
+    private String promptUserAnswer(Question question) {
+        String userAnswer;
+
+        console.printf(CHATBOT_TALK + question.getQuestioning() + "\n");
+        console.printf(USER_TALK);
+        userAnswer = console.readLine();
+
+        return userAnswer;
+    } //promptUserAnswer
 
 }

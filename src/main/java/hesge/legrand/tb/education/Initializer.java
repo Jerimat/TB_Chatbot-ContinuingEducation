@@ -33,8 +33,6 @@ import java.util.Map;
 public class Initializer {
 
     private static Initializer instance;
-    private String inputFilePath;
-    private String outputFilePath;
     private List<Question> lstQuestions;
 
     public static Initializer getInstance() {
@@ -52,10 +50,9 @@ public class Initializer {
     private Initializer() {
     }
 
-    public void initialize(String inputFilePath) throws IOException {
-        this.inputFilePath = inputFilePath;
-//        this.outputFilePath = outputFilePath;
-        initializeQuestions();
+    public void initialize(String inputFilePath, String outputFilePath) throws IOException {
+        initializeQuestions(inputFilePath);
+        serializeQuestions(outputFilePath);
     } //initialize
 
     /**
@@ -65,8 +62,8 @@ public class Initializer {
      * @throws IOException
      */
     @Experimental
-    private void serializeQuestions(String output) throws IOException {
-        FileWriter jsonFileWriter = new FileWriter(output);
+    private void serializeQuestions(String outputFilePath) throws IOException {
+        FileWriter jsonFileWriter = new FileWriter(outputFilePath);
         Gson gson = new GsonBuilder()
                 .serializeNulls()
                 .setPrettyPrinting()
@@ -108,7 +105,7 @@ public class Initializer {
      * @return List of Questions found in input file
      * @throws IOException
      */
-    private <T extends GenericModel> void initializeQuestions() throws IOException {
+    private <T extends GenericModel> void initializeQuestions(String inputFilePath) throws IOException {
         List<Question> lstInputQuestions = new ArrayList<>();
 
         String row;
@@ -127,7 +124,7 @@ public class Initializer {
                 String question = data[1];
                 String answer = data[2];
 
-                Map<String, List<T>> lstAnalysis = nlu.setRecognizable(answer);
+                Map<String, List<T>> lstAnalysis = nlu.setGradable(answer);
                 List<CategoriesResult> categories = (List<CategoriesResult>) lstAnalysis.get(Constants.CATEGORIES_ID);
                 List<ConceptsResult> concepts = (List<ConceptsResult>) lstAnalysis.get(Constants.CONCEPTS_ID);
 
@@ -138,12 +135,12 @@ public class Initializer {
                     lstInputQuestions.add(new Question(theme, question, answer, categories, concepts));
                 }
             } catch (IllegalArgumentException e) {
-                System.out.println("you have entered a wrong Theme identifier : " + data[0] + " is not a theme handled by the EducativeChatbot (case-sensitive)");
+                System.out.println("you have entered a wrong Theme identifier : " + data[0] + " is not a theme handled by the EducativeChatbot (case-sensitive) \n");
                 e.printStackTrace();
             }
         }
         csvReader.close();
-        System.out.println("Questions added");
+        System.out.println("Questions added \n");
 
         lstQuestions = lstInputQuestions;
     } //initializeQuestions
