@@ -10,7 +10,6 @@ import com.ibm.watson.natural_language_understanding.v1.model.ConceptsResult;
 import hesge.legrand.tb.chatbot.helper.Constants;
 import hesge.legrand.tb.chatbot.helper.Credentials;
 import hesge.legrand.tb.education.model.Question;
-import io.reactivex.annotations.Experimental;
 
 import java.util.List;
 import java.util.Map;
@@ -52,18 +51,24 @@ public class WatsonAssistantModule {
     }
 
     private void setCredentials() {
-        IamOptions options = new IamOptions.Builder()
-                .apiKey(Credentials.ASSISTANT_APIKEY)
-                .build();
+            IamOptions options = new IamOptions.Builder()
+                    .apiKey(Credentials.ASSISTANT_APIKEY)
+                    .build();
 
-        assistant = new Assistant(Credentials.ASSISTANT_VERSION, options);
-        assistant.setEndPoint(Credentials.ASSISTANT_API_URL);
+            assistant = new Assistant(Credentials.ASSISTANT_VERSION, options);
+            assistant.setEndPoint(Credentials.ASSISTANT_API_URL);
     } //setCredentials
 
-    public int interactionState(String answer) {
+    /**
+     * Determines if the user wants to stop, needs a hint or has just answered the question
+     * @param utterance : utterance of the user
+     * @return either -1 if user wants to stop the questions sessions, 0 if the user answered the question,
+     *                                                                      or 1 if the user asked for a hint
+     */
+    public int interactionState(String utterance) {
         int state = CODE_QUESTIONS_PROCEED;
 
-        MessageResponse response = responseBuilder(answer);
+        MessageResponse response = responseBuilder(utterance);
         List<DialogNodeAction> responseActions = response.getOutput().getActions();
         if (responseActions != null) {
             if (responseActions.get(0).getActionType().equalsIgnoreCase("client")) {
@@ -82,7 +87,8 @@ public class WatsonAssistantModule {
     } //interactionState
 
     /**
-     * This method makes chatbot answer
+     * This method gets the answer object from the Response
+     * and print every utterance the chatbot has to print
      * @param chatbotAnswer
      */
     private void answer(List<DialogRuntimeResponseGeneric> chatbotAnswer){
@@ -119,7 +125,7 @@ public class WatsonAssistantModule {
 
     /**
      * This method make comparison between results of user's userPerformance and those of typical correct userPerformance
-     * After analysis, responds with either good, partial, or bad feedback
+     * After analysis, responds with either perfect, good, partial, or bad feedback
      * @param userPerformance : The userPerformance the user wrote
      * @param question : the question the user answered to
      */
@@ -132,6 +138,7 @@ public class WatsonAssistantModule {
             sendFeedback(UNGRADABLE_ANSWER_LIMIT);
         } else {
             try {
+                float correctness;
 
                 /*  Get analysis from user performance  */
                 Map<String, List<T>> answerAnalysis = nlu.setGradable(userPerformance);
@@ -153,25 +160,34 @@ public class WatsonAssistantModule {
                 }
                 inField /= correctCategories.size();
 
-                /*  concepts correspondence percentage  */
-                float precision = 0;
-                for (ConceptsResult concept : correctConcepts) {
-                    String conceptLabel = concept.getText();
-                    for (ConceptsResult userConcept : userConcepts) {
-                        String userConceptLabel = userConcept.getText();
-                        if (userConceptLabel.equalsIgnoreCase(conceptLabel)) {
-                            precision += 1;
+                if (!correctConcepts.isEmpty()) {
+                    /*  concepts correspondence percentage  */
+                    float precision = 0;
+                    for (ConceptsResult concept : correctConcepts) {
+                        String conceptLabel = concept.getText();
+                        for (ConceptsResult userConcept : userConcepts) {
+                            String userConceptLabel = userConcept.getText();
+                            if (userConceptLabel.equalsIgnoreCase(conceptLabel)) {
+                                precision += 1;
+                            }
                         }
                     }
-                }
-                precision /= correctConcepts.size();
+                    precision /= correctConcepts.size();
 
-                /*  We make categories correspondance more important than concept correspondance  */
-                float correctness = ((2 * inField) + precision) / 3;
-                System.console().printf("pourcentage de justesse : %.2f %n \n", correctness);
+                    /*  We make categories correspondence more important than concept correspondence  */
+                    correctness = ((2 * inField) + precision) / 3;
+                } else {
+                    correctness = inField;
+                }
+
+                System.out.printf("pourcentage de justesse : %.2f %n \n", correctness);
                 sendFeedback(correctness);
+
+                if (correctness < PERFECT_ANSWER_LIMIT) {
+                    System.out.println(CHATBOT_TALK + FORMATIVE_FEEDBACK + question.getAnswer());
+                }
             } catch (ServiceResponseException e) {
-                System.console().printf(CHATBOT_TALK + FEEDBACK_ANSWER_NOT_VALID + "\n");
+                System.out.println(CHATBOT_TALK + FEEDBACK_ANSWER_NOT_VALID);
             }
         }
     } //assertAnswer
@@ -188,9 +204,14 @@ public class WatsonAssistantModule {
             else if (correctness > ACCEPTABLE_ANSWER_LIMIT) { feedback += FEEDBACK_ACCEPTABLE_ANSWER; }
             else { feedback += FEEDBACK_BAD_ANSWER; }
         } else { feedback += FEEDBACK_UNGRADABLE; }
-        System.console().printf(feedback + "\n");
+        System.out.println(feedback);
     } //sendFeedback
 
+    /**
+     * Boilerplate code needed for each utterance sent to chatbot API
+     * @param utterance : utterance to be computed
+     * @return Response from chatbot API
+     */
     private MessageResponse responseBuilder(String utterance) {
         MessageInput input = new MessageInput.Builder()
                 .messageType("text")

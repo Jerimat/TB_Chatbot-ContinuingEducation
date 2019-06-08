@@ -58,24 +58,11 @@ public class NaturalLanguageUnderstandingModule {
                 .build();
     } //setFeatures
 
-    public void analyzeUtterance(String utterance) {
-        AnalyzeOptions parameters = new AnalyzeOptions.Builder()
-                .text(utterance)
-                .features(features)
-                .build();
-
-        AnalysisResults response = nlu
-                .analyze(parameters)
-                .execute()
-                .getResult();
-
-    } //analyzeUtterance
-
     /**
-     * This method analyze a typical correct answer  to a question
-     * to detect which categories and concepts should stand out from the analysis of the user's answer to the given question
+     * This method analyzes an input the gets the categories anc concepts detected in the input.
+     * This method is necessary to compare the typical correct answer and the utterance of the user
      *
-     * @param performance : the kind of answer the user should answer the corresponding question with
+     * @param utterance : the utterance to be analyzed
      * @param <T> : Since this method returns 2 different types of Analysis we must specify that
      *           both CategoriesResult and ConcceptResult inherit from GenericModel
      *
@@ -83,11 +70,11 @@ public class NaturalLanguageUnderstandingModule {
      * 1 List<CategoriesResult> containing the categories concerned by the typical correct answer
      * 1 List<ConceptResult> containing the concepts concerned by the typical correct answer
      */
-    public <T extends GenericModel> Map<String, List<T>> setGradable(String performance) {
+    public <T extends GenericModel> Map<String, List<T>> setGradable(String utterance) {
         Map<String, List<T>> questionAnalysis = new HashMap<>();
 
         AnalyzeOptions parameters = new AnalyzeOptions.Builder()
-                .text(performance)
+                .text(utterance)
                 .features(features)
                 .build();
 
@@ -96,7 +83,7 @@ public class NaturalLanguageUnderstandingModule {
                 .execute()
                 .getResult();
 
-        /*  Get the categories & concepts result of the performance analysis */
+        /*  Get the categories & concepts result of the utterance analysis */
         List<CategoriesResult> categories = results.getCategories();
         List<ConceptsResult> concepts = results.getConcepts();
 

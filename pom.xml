@@ -6,7 +6,7 @@
 
     <groupId>hesge.legrand.tb.chatbot</groupId>
     <artifactId>chatbot-tb</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <properties>
         <!-- https://maven.apache.org/general.html#encoding-warning -->
@@ -46,14 +46,13 @@
                             <transformers>
                                 <transformer
                                     implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>hesge.legrand.tb.chatbot.StartService</mainClass>
+                                    <mainClass>hesge.legrand.tb.chatbot.StartService</mainClass> <!-- Define here the main class to be launched when running the .jar file -->
                                 </transformer>
                             </transformers>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 

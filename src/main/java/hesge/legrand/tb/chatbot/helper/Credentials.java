@@ -12,6 +12,5 @@ public final class Credentials {
     public final static String ASSISTANT_APIKEY = "uGt_uns_Sds1olKf_kG4CRh6ILkJKlrZYUlHR9SwVPmE";
     public final static String ASSISTANT_API_URL = "https://gateway-lon.watsonplatform.net/assistant/api";
     public final static String ASSISTANT_VERSION = "2019-03-31";
-    private final static String WORKSPACE_ID = "c4c3d019-0988-4ee1-8cc0-c2d65a686574";
 
 }

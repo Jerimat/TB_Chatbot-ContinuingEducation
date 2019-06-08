@@ -32,6 +32,7 @@ public final class Constants {
     public static final String FEEDBACK_BAD_ANSWER = "Je pense que tu as besoin de revoir encore ce sujet";
     public static final String FEEDBACK_UNGRADABLE = "Je n'ai pas assez de données pour te donner de feedback";
     public static final String FEEDBACK_ANSWER_NOT_VALID = "Essaye de répondre avec une explication de 5 mots à 2 phrases";
+    public static final String FORMATIVE_FEEDBACK = "Une réponse presque parfaite aurait été par exemple...";
 
 
 }

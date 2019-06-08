@@ -20,14 +20,14 @@ import java.util.Map;
 
 /**
  * This class is used to transform a .csv file created by the course's instructors into a List of Question
- * The List of Question is then serialized to a .json file to be usable in the EducativeChatbot class.
+ * The List of Question is then serialized to a .json file.
  *
  * A Question is composed of a THEME (which must be present in education.model.Theme), a question, a typical correct answer and an optional hint
  * The typical correct answer is then being analyzed by our NaturalLanguageUnderstandingModule
  * to set the categories and concepts the user's answer must be about
  *
- * String inputFilePath : path of the file containing THEME, question, typical correct answer
- * String outputFilePath : path of the file to be written
+ * String inputFilePath : path of the .csv file containing THEME, question, typical correct answer
+ * String outputFilePath : path of the .json file to be written
  * List<Question> lstQuestions : List of all questions found in the given inputFilePath
  */
 public class Initializer {
@@ -58,10 +58,9 @@ public class Initializer {
     /**
      * Serialize the List of Question created from initializeQuestions
      * and write the result in the user's specified filePath output
-     * @param output : output filePath
+     * @param outputFilePath : output filePath
      * @throws IOException
      */
-    @Experimental
     private void serializeQuestions(String outputFilePath) throws IOException {
         FileWriter jsonFileWriter = new FileWriter(outputFilePath);
         Gson gson = new GsonBuilder()
@@ -120,7 +119,7 @@ public class Initializer {
             String[] data = row.split(Constants.DATA_SEPARATOR);
 
             try {
-                Theme theme = Theme.valueOf(data[0]);
+                Theme theme = Theme.valueOf(data[0].toUpperCase());
                 String question = data[1];
                 String answer = data[2];
 
@@ -135,12 +134,12 @@ public class Initializer {
                     lstInputQuestions.add(new Question(theme, question, answer, categories, concepts));
                 }
             } catch (IllegalArgumentException e) {
-                System.out.println("you have entered a wrong Theme identifier : " + data[0] + " is not a theme handled by the EducativeChatbot (case-sensitive) \n");
+                System.out.println("you have entered a wrong Theme identifier : " + data[0] + " is not a theme handled by the EducativeChatbot");
                 e.printStackTrace();
             }
         }
         csvReader.close();
-        System.out.println("Questions added \n");
+        System.out.println("Questions added");
 
         lstQuestions = lstInputQuestions;
     } //initializeQuestions

@@ -2,34 +2,38 @@ package hesge.legrand.tb.chatbot;
 
 import hesge.legrand.tb.chatbot.conversation.EducativeChatbot;
 import hesge.legrand.tb.education.Initializer;
-import io.reactivex.annotations.Experimental;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Scanner;
+import java.util.logging.LogManager;
 
-import static hesge.legrand.tb.chatbot.helper.Constants.USER_TALK;
 
+/**
+ * Main class to be launched to start EducativeChatbot
+ * To launch the application, you need to specify the path of the .csv file containing the questions you want the bot to use.
+ * You also need to provide a destination path for a .json file to be created.
+ *
+ * This file will contain a json representation of the questions with their attributes
+ * so that you can later modify the implementation of this class to economize NLU API calls and reuse the resulting NLU analyzis from the .json file
+ */
 public class StartService {
 
-    public static void main(String[] args) throws FileNotFoundException {
-        if (args.length == 2) {
-            String inputFilePath = args[0];
-            String outputFilePath = args[1];
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Path du fichier .csv contenant les questions à intégrer au chatbot : ");
+        String inputFilePath = scanner.nextLine();
 
-            try {
-                Initializer.getInstance().initialize(inputFilePath, outputFilePath);
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.console().printf("Problem occured with initialisation \n");
-                return;
-            }
-                EducativeChatbot.getInstance();
+        System.out.print("Path de destination du fichier .json contenant les questions et leurs attributs : ");
+        String outputFilePath = scanner.nextLine();
+        try {
+            Initializer.getInstance().initialize(inputFilePath, outputFilePath);
+            EducativeChatbot.getInstance();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Problem occured with initialisation");
+            scanner.close();
         }
-        else {
-            System.console().printf("You should provide 2 parameters! Path of the input .csv file and path of the output .json file \n");
-            System.console().printf("1st parameter corresponds to the path of the input file, 2nd parameter corresponds to the path of the output file. \n");
-        }
+        scanner.close();
     } //main
 
 }
